@@ -30,3 +30,4 @@ explicit relationship links rather than rewriting the old record.
 | ADR | Title | Status | Class | Relationships |
 | --- | --- | --- | --- | --- |
 | [ADR-0001](implemented/architecture/2026-08-17-0001-lock-core-engine-application-stack.md) | Lock the Core Engine application stack (Tauri v2 + bundled SQLCipher + React/shadcn) | Implemented | architecture | Retains HADR-0002, HADR-0003 |
+| [ADR-0002](implemented/architecture/2026-08-17-0002-fix-core-engine-workspace-crate-topology.md) | Fix the Core Engine workspace crate topology (app_core + infra_* + src-tauri) | Implemented | architecture | Retains HADR-0002, HADR-0003; refines ADR-0001 |
