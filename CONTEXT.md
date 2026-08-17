@@ -43,3 +43,15 @@ _Avoid_: Feature Flag, capability, scope, entitlement
 **Role**:
 A named, barangay-configurable collection of Permissions, assigned to exactly one Staff Account. Four seeded defaults ship editable, not specially privileged (Admin/Secretary, Encoder, Treasurer, Read-Only/Captain); an Admin/Secretary may also create unlimited Custom Roles with their own Permission selection.
 _Avoid_: Group, permission set
+
+**Shared Schema Columns**:
+The four-column convention — `id` (UUIDv7), `barangay_code`, `created_at`, `updated_at`, `sync_status` — carried by every table holding a barangay-owned business record that is a candidate for a future resident-linked `.bmssync` export (Resident, Household, Certificate/Document, and future module business objects like KP Blotter Case, Treasury Transaction, Business Permit). Deliberately *not* carried by administrative/config tables local to one installation (Staff Account, Role, Permission, Feature Flags, License state, Purok/Sitio/Zone, Document Type templates, Audit Trail) — those use whatever columns their own domain needs. Master PRD Appendix A names these columns informatively; ADR-0006 fixes them as binding, superseding Appendix A's literal "UUIDv4 (or ULID)" text for `id` with the already-decided UUIDv7.
+_Avoid_: Sync columns (informal use is fine in prose; the glossary term is the full name), audit columns (that term is reserved for the Audit Trail's own timestamping, which is separate)
+
+**sync_status**:
+A per-record enum on every table carrying the Shared Schema Columns, exactly `PENDING` or `SYNCED` — no third state. Tracks whether a record has been included in a future `.bmssync` export package, not a record's own business lifecycle (archived/voided/etc., which lives in that table's own columns).
+_Avoid_: Status, state (too generic — always qualify as `sync_status` when referring to this column)
+
+**Clock**:
+An `app_core` port trait, injected into use cases, that supplies the current UTC time. Stamps `created_at`/`updated_at` on Shared-Schema-Columns tables at the domain layer, rather than via SQLite `DEFAULT`/triggers in `infra_persistence` — keeping timestamping testable (fake-able in unit tests) and inside the hexagonal boundary ADR-0002 already drew.
+_Avoid_: Clock service, time provider
