@@ -39,8 +39,9 @@ pub enum RecoveryCodeError {
     #[error("recovery code checksum is invalid")]
     InvalidChecksum,
 
-    /// The input was not 28 data symbols plus one check symbol, or contained a
-    /// symbol outside the Crockford Base32 alphabet.
+    /// The input was not 28 data symbols plus one check symbol, contained a
+    /// data symbol outside the Crockford Base32 alphabet, or a check symbol
+    /// outside the 37-symbol Crockford check alphabet.
     #[error("recovery code format is malformed")]
     MalformedFormat,
 }
