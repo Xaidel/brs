@@ -21,8 +21,20 @@ The persisted record of a validated License Key's effect on an installation: whi
 _Avoid_: License record, activation record
 
 **Machine Hardware ID**:
-A fingerprint derived from CPU ID and motherboard serial number, used exclusively to bind a License Key to one specific installation.
+A fingerprint derived from CPU ID, motherboard serial number, and SMBIOS UUID (SHA-256 of the three concatenated, Crockford Base32-displayed), used exclusively to bind a License Key to one specific installation. Never an input to database-key derivation — see `system_secret`.
 _Avoid_: Hardware fingerprint, device ID
+
+**system_secret**:
+A cryptographically random, per-installation value stored exclusively in the OS-protected credential store (Windows Credential Manager), never written to disk. Combined with the salt in `bootstrap.json` via PBKDF2-HMAC-SHA256 to derive the SQLCipher database key. Deliberately independent of Machine Hardware ID, so a hardware change or disaster restore never makes existing data unreadable.
+_Avoid_: Encryption key, master password, DB secret
+
+**bootstrap.json**:
+The unencrypted first-run file (`%APPDATA%\BarangayMS\bootstrap.json`) holding the non-secret PBKDF2 salt and the AES-256-GCM-wrapped copy of `system_secret`. Lives in the application data directory so it travels with every Backup Snapshot, resolving the chicken-and-egg where the salt is needed before the database it might otherwise live in can be opened.
+_Avoid_: Bootstrap file (informal use is fine in prose; the glossary term is the literal filename), credential store (that term is reserved for the OS-protected store holding `system_secret`)
+
+**Recovery Code**:
+A one-time, human-transcribable code (Crockford Base32, 28 data characters + 1 checksum character, grouped `XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-X`) generated at first run. Wraps `system_secret` (AES-256-GCM) rather than transcribing it directly, so the code stays short and independently rotatable. The fallback unlock path for the database or a Backup Snapshot when the OS-protected credential store is unavailable — independent of both Credential Manager and the original machine's hardware.
+_Avoid_: Recovery key, backup code, unlock code
 
 **Permission**:
 An individually toggleable capability key from a fixed, developer-seeded catalog, named `<resource>.<action>` (e.g. `resident.create`, `certificate.void`, `staff.manage`). Roles — seeded or Custom — only ever select from existing Permission rows; no Role invents a new Permission key.
@@ -31,3 +43,15 @@ _Avoid_: Feature Flag, capability, scope, entitlement
 **Role**:
 A named, barangay-configurable collection of Permissions, assigned to exactly one Staff Account. Four seeded defaults ship editable, not specially privileged (Admin/Secretary, Encoder, Treasurer, Read-Only/Captain); an Admin/Secretary may also create unlimited Custom Roles with their own Permission selection.
 _Avoid_: Group, permission set
+
+**Shared Schema Columns**:
+The four-column convention — `id` (UUIDv7), `barangay_code`, `created_at`, `updated_at`, `sync_status` — carried by every table holding a barangay-owned business record that is a candidate for a future resident-linked `.bmssync` export (Resident, Household, Certificate/Document, and future module business objects like KP Blotter Case, Treasury Transaction, Business Permit). Deliberately *not* carried by administrative/config tables local to one installation (Staff Account, Role, Permission, Feature Flags, License state, Purok/Sitio/Zone, Document Type templates, Audit Trail) — those use whatever columns their own domain needs. Master PRD Appendix A names these columns informatively; ADR-0006 fixes them as binding, superseding Appendix A's literal "UUIDv4 (or ULID)" text for `id` with the already-decided UUIDv7.
+_Avoid_: Sync columns (informal use is fine in prose; the glossary term is the full name), audit columns (that term is reserved for the Audit Trail's own timestamping, which is separate)
+
+**sync_status**:
+A per-record enum on every table carrying the Shared Schema Columns, exactly `PENDING` or `SYNCED` — no third state. Tracks whether a record has been included in a future `.bmssync` export package, not a record's own business lifecycle (archived/voided/etc., which lives in that table's own columns).
+_Avoid_: Status, state (too generic — always qualify as `sync_status` when referring to this column)
+
+**Clock**:
+An `app_core` port trait, injected into use cases, that supplies the current UTC time. Stamps `created_at`/`updated_at` on Shared-Schema-Columns tables at the domain layer, rather than via SQLite `DEFAULT`/triggers in `infra_persistence` — keeping timestamping testable (fake-able in unit tests) and inside the hexagonal boundary ADR-0002 already drew.
+_Avoid_: Clock service, time provider
