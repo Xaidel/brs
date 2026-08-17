@@ -23,3 +23,11 @@ _Avoid_: License record, activation record
 **Machine Hardware ID**:
 A fingerprint derived from CPU ID and motherboard serial number, used exclusively to bind a License Key to one specific installation.
 _Avoid_: Hardware fingerprint, device ID
+
+**Permission**:
+An individually toggleable capability key from a fixed, developer-seeded catalog, named `<resource>.<action>` (e.g. `resident.create`, `certificate.void`, `staff.manage`). Roles — seeded or Custom — only ever select from existing Permission rows; no Role invents a new Permission key.
+_Avoid_: Feature Flag, capability, scope, entitlement
+
+**Role**:
+A named, barangay-configurable collection of Permissions, assigned to exactly one Staff Account. Four seeded defaults ship editable, not specially privileged (Admin/Secretary, Encoder, Treasurer, Read-Only/Captain); an Admin/Secretary may also create unlimited Custom Roles with their own Permission selection.
+_Avoid_: Group, permission set
