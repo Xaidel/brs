@@ -1,6 +1,6 @@
 # Core Engine Package
 
-Status: Proposed — pending Phase 1 technical spike
+Status: Proposed
 
 Owner: Product and Engineering (solo)
 
@@ -28,7 +28,7 @@ This package covers the first three phases of the original product roadmap. Late
 
 | Phase | Milestone | Core Deliverable |
 |---|---|---|
-| Phase 1 | Tech Spike & Core Licensing Engine — [designed](phase-1/tdd.phase-1.tech-spike-and-licensing.md) | SQLCipher + FTS5 compilation spike, Ed25519 key verification, Credential Manager integration for encryption key derivation (per [Appendix B](appendix-b-key-derivation-and-recovery.md)), first-run Recovery Code generation. See [Phase 1 TDD](phase-1/tdd.phase-1.tech-spike-and-licensing.md) and its [spike results log](phase-1/spike-results.md). |
+| Phase 1 | Tech Spike & Core Licensing Engine | SQLCipher + FTS5 compilation spike, Ed25519 key verification, Credential Manager integration for encryption key derivation (per [Appendix B](appendix-b-key-derivation-and-recovery.md)), first-run Recovery Code generation. |
 | Phase 2 | Core Engine & RBAC MVP | Per-person staff accounts (Argon2id), Resident Registry (FTS5 search), Household Registry, transactional Certificate Generator with atomic Control Number sequencing. |
 | Phase 3 | Plug & Play UI & Retention Engine | License Settings screen, dynamic feature-flag UI wrappers, automated rolling 14-snapshot backup engine. |
 
