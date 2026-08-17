@@ -55,3 +55,15 @@ _Avoid_: Status, state (too generic — always qualify as `sync_status` when ref
 **Clock**:
 An `app_core` port trait, injected into use cases, that supplies the current UTC time. Stamps `created_at`/`updated_at` on Shared-Schema-Columns tables at the domain layer, rather than via SQLite `DEFAULT`/triggers in `infra_persistence` — keeping timestamping testable (fake-able in unit tests) and inside the hexagonal boundary ADR-0002 already drew.
 _Avoid_: Clock service, time provider
+
+**Control Number**:
+The audit-grade, gapless identifier assigned to a Certificate at the moment of issuance. Unique within its Document Type and Philippine Standard Time (UTC+8) calendar year; the raw allocation counter is never reused, skipped, or renumbered, and a voided Certificate retains its number (marked `VOIDED`). Rendered from the Document Type's `Control Number Format`.
+_Avoid_: Serial number, reference number, sequence ID
+
+**Control Number Format**:
+A per-Document-Type configurable pattern that renders a Control Number: literal text plus exactly two brace tokens — `{YYYY}` (the PHT year of issuance) and `{N…}` (a zero-padded decimal sequence; the number of `N`s sets the *minimum* width, never a ceiling). Each format must contain exactly one of each token. The underlying sequence resets each PHT calendar year, so gaplessness holds within (Document Type × year).
+_Avoid_: Numbering scheme, serial format, sequence pattern
+
+**Template Variable**:
+A named placeholder in a Certificate Template, written `{{source.field}}` (e.g. `{{resident.name}}`, `{{certificate.control_number}}`), that auto-populates from Resident, Household, Certificate, Barangay Official, or Barangay Identity data at issuance. The set is a closed, developer-seeded catalog (not barangay-defined); a missing value renders empty, and computed values (age, assembled names) are frozen into the rendered certificate at issuance. Barangay Officials are referenced through the standard `captain`/`secretary` position keys.
+_Avoid_: Placeholder, merge field, template token
