@@ -95,24 +95,12 @@ impl LicenseGrant {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::value_objects::test_support::grouped;
     use base64::Engine as _;
     use chrono::{TimeZone, Utc};
 
-    fn grouped_id(n: usize) -> String {
-        let alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-        let chars: String = (0..n * 4)
-            .map(|i| alphabet.as_bytes()[i % 32] as char)
-            .collect();
-        chars
-            .as_bytes()
-            .chunks(4)
-            .map(|c| std::str::from_utf8(c).unwrap())
-            .collect::<Vec<_>>()
-            .join("-")
-    }
-
     fn machine_id() -> MachineHardwareId {
-        MachineHardwareId::parse(&grouped_id(13)).unwrap()
+        MachineHardwareId::parse(&grouped(13)).unwrap()
     }
 
     fn payload_for(mid: &MachineHardwareId) -> LicenseKeyPayload {
@@ -152,7 +140,7 @@ mod tests {
     fn activate_rejects_mismatched_machine_id() {
         let local = machine_id();
         let other =
-            MachineHardwareId::parse(&grouped_id(13).replace('A', "B").replace('B', "C")).unwrap();
+            MachineHardwareId::parse(&grouped(13).replace('A', "B").replace('B', "C")).unwrap();
         assert_ne!(other, local);
         let err = LicenseGrant::activate(
             payload_for(&other),

@@ -11,6 +11,8 @@ pub(crate) mod license_signature;
 pub(crate) mod machine_hardware_id;
 pub(crate) mod recovery_code;
 pub(crate) mod system_secret;
+#[cfg(test)]
+pub(crate) mod test_support;
 pub(crate) mod timestamp;
 
 pub use database_encryption_key::DatabaseEncryptionKey;

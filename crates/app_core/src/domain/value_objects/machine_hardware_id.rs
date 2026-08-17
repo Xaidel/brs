@@ -70,47 +70,32 @@ impl std::str::FromStr for MachineHardwareId {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn alphabet() -> &'static str {
-        "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-    }
-
-    fn groups(n: usize) -> String {
-        let chars: String = (0..n * 4)
-            .map(|i| alphabet().as_bytes()[i % 32] as char)
-            .collect();
-        chars
-            .as_bytes()
-            .chunks(4)
-            .map(|c| std::str::from_utf8(c).unwrap())
-            .collect::<Vec<_>>()
-            .join("-")
-    }
+    use crate::domain::value_objects::test_support::grouped;
 
     #[test]
     fn parses_grouped_form() {
-        let input = groups(13);
+        let input = grouped(13);
         let id = MachineHardwareId::parse(&input).unwrap();
         assert_eq!(id.as_str(), input);
     }
 
     #[test]
     fn normalizes_casing_and_hyphens() {
-        let grouped = groups(13);
-        let ungrouped = grouped.replace('-', "");
+        let input = grouped(13);
+        let ungrouped = input.replace('-', "");
         let mixed = ungrouped.to_lowercase();
         let id = MachineHardwareId::parse(&mixed).unwrap();
-        assert_eq!(id.as_str(), grouped);
+        assert_eq!(id.as_str(), input);
     }
 
     #[test]
     fn rejects_wrong_length() {
         assert_eq!(
-            MachineHardwareId::parse(&groups(12)),
+            MachineHardwareId::parse(&grouped(12)),
             Err(MachineHardwareIdError::InvalidFormat)
         );
         assert_eq!(
-            MachineHardwareId::parse(&groups(14)),
+            MachineHardwareId::parse(&grouped(14)),
             Err(MachineHardwareIdError::InvalidFormat)
         );
         assert_eq!(
@@ -121,7 +106,7 @@ mod tests {
 
     #[test]
     fn rejects_non_crockford_symbols() {
-        let mut input = groups(13);
+        let mut input = grouped(13);
         input.replace_range(..1, "O");
         assert_eq!(
             MachineHardwareId::parse(&input),
@@ -131,7 +116,7 @@ mod tests {
 
     #[test]
     fn display_matches_canonical() {
-        let input = groups(13);
+        let input = grouped(13);
         let id = MachineHardwareId::parse(&input).unwrap();
         assert_eq!(id.to_string(), input);
     }
