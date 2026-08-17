@@ -194,6 +194,18 @@ mod tests {
     }
 
     #[test]
+    fn rejects_out_of_alphabet_check_symbol() {
+        // '!' is not a Crockford check symbol (the 37-symbol alphabet); the
+        // code is malformed, not a well-formed code with a bad checksum.
+        let mut code = canonical_code(ALL_ZEROS, "0");
+        code.replace_range(code.len() - 1.., "!");
+        assert_eq!(
+            RecoveryCode::parse(&code),
+            Err(RecoveryCodeError::MalformedFormat)
+        );
+    }
+
+    #[test]
     fn canonical_data_excludes_check_symbol() {
         let code = canonical_code(ALL_ZEROS, "0");
         let parsed = RecoveryCode::parse(&code).unwrap();
