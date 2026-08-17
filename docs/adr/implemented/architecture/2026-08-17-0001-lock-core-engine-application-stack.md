@@ -95,6 +95,7 @@ Same shell as the chosen option but link against a system-installed SQLCipher ra
 ## Relationships and References
 
 - Retains [HADR-0002 (hexon architecture)](../../../../backend_arch_docs/adr/HADR-0002-adopt-rust-hexon-architecture.md) and [HADR-0003 (crate responsibilities)](../../../../backend_arch_docs/adr/HADR-0003-define-crate-and-module-responsibilities.md).
+- Refined by [ADR-0002 (Core Engine workspace crate topology)](../architecture/2026-08-17-0002-fix-core-engine-workspace-crate-topology.md), which pins the concrete crate list this ADR deferred.
 - Promotes [Core Engine Appendix A](../../../specs/core-engine/appendix-a-technical-architecture-direction.md) from informative to normative; refines [Appendix B](../../../specs/core-engine/appendix-b-key-derivation-and-recovery.md) key-derivation guidance to normative.
 - Owning spec: [Core Engine PRD](../../../specs/core-engine/PRD.core-engine.md) (NFR-01…NFR-06, §9.1, §9.5, §9.6).
 - Supporting issue: [Lock the application stack (Tauri + SQLCipher + crypto + React/shadcn)](https://github.com/Xaidel/brs/issues/2).
