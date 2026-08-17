@@ -9,3 +9,4 @@
 - Name domain events as past-tense business facts rather than CRUD notifications.
 - Name domain services after their business rule; avoid generic manager containers.
 - Keep transport DTO names private. Ports own operation-level commands and results.
+- Outbound-port traits normally end in an `{Noun}`-shaped suffix (`{Noun}Repository` / `{Noun}Source` / `{Noun}Gateway`). Accepted capability-shaped exceptions, mandated by `tdd.phase-1` §8 and not to be re-litigated by later gates: `LicenseSignatureVerifier`, `BackupSnapshotWriter`, and `Clock`.
