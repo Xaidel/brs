@@ -6,8 +6,13 @@ use crate::domain::value_objects::{FeatureFlag, LicenseGrantId, MachineHardwareI
 ///
 /// Invariant: carries no `SystemSecret`, `RecoveryCode`, or
 /// `DatabaseEncryptionKey` — only non-secret identifiers, the granted flags, and
-/// a timestamp. No consumer exists in Phase 1; the application layer drains
-/// (discards) it for now (Gate 2 per the TDD's implementation plan §13).
+/// a timestamp. No consumer exists in Phase 1; the application layer constructs
+/// it and drains (discards) it (§6.3).
+///
+/// `#[allow(dead_code)]`: constructed and drained by `ActivateLicenseUseCase`,
+/// which is itself unreachable from `app_core`'s public surface until the
+/// assembly/composition gate (HADR-0007 gates 4–5); the fields are write-only
+/// until the Phase 2 Audit Trail consumer reads them.
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LicenseGrantActivated {
@@ -21,6 +26,8 @@ pub struct LicenseGrantActivated {
     pub activated_at: Timestamp,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: `new` is called only via the
+/// Gate 2 use-case tests until the composition gate.
 #[allow(dead_code)]
 impl LicenseGrantActivated {
     /// Records the activation of a grant.

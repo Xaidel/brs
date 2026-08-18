@@ -17,10 +17,13 @@ use crate::domain::value_objects::{
 /// requiring domain to hold crypto material — signature verification happens
 /// earlier, in the application layer behind `LicenseSignatureVerifier` (§4.4).
 ///
-/// The entity is not yet constructed by `app_core`'s lib code in this slice —
-/// its application-layer use cases (`ActivateLicenseUseCase` et al.) are Gate 2
-/// per the TDD's implementation plan (§13). It is domain-tested here, per
-/// HADR-0006 Gate 1.
+/// Constructed by `ActivateLicenseUseCase` after signature verification
+/// (`tdd.phase-1` §7.2); domain-tested here per HADR-0006 Gate 1.
+///
+/// `#[allow(dead_code)]`: constructed by `ActivateLicenseUseCase`, which is
+/// itself unreachable from `app_core`'s public surface until the
+/// assembly/composition gate (HADR-0007 gates 4–5); until then the entity is
+/// exercised only by the Gate 1 domain tests and the Gate 2 use-case tests.
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LicenseGrant {
@@ -31,6 +34,8 @@ pub struct LicenseGrant {
     activated_at: Timestamp,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: exercised only via the Gate 1 and
+/// Gate 2 tests until the composition gate.
 #[allow(dead_code)]
 impl LicenseGrant {
     /// Activates a license: constructs the grant iff the payload is bound to the
@@ -98,9 +103,16 @@ mod tests {
     use crate::domain::value_objects::test_support::grouped;
     use base64::Engine as _;
     use chrono::{TimeZone, Utc};
+    use uuid::Uuid;
 
     fn machine_id() -> MachineHardwareId {
         MachineHardwareId::parse(&grouped(13)).unwrap()
+    }
+
+    // The id is irrelevant to these tests; a fixed value keeps them
+    // deterministic (generation lives in the application layer, follow-up #21).
+    fn grant_id() -> LicenseGrantId {
+        LicenseGrantId::from_uuid(Uuid::from_u128(1))
     }
 
     fn payload_for(mid: &MachineHardwareId) -> LicenseKeyPayload {
@@ -120,13 +132,8 @@ mod tests {
     #[test]
     fn activate_succeeds_when_machine_id_matches() {
         let local = machine_id();
-        let grant = LicenseGrant::activate(
-            payload_for(&local),
-            &local,
-            LicenseGrantId::generate(),
-            timestamp(),
-        )
-        .unwrap();
+        let grant =
+            LicenseGrant::activate(payload_for(&local), &local, grant_id(), timestamp()).unwrap();
         assert_eq!(grant.machine_hardware_id(), &local);
         assert_eq!(
             grant.feature_flags(),
@@ -142,13 +149,8 @@ mod tests {
         let other =
             MachineHardwareId::parse(&grouped(13).replace('A', "B").replace('B', "C")).unwrap();
         assert_ne!(other, local);
-        let err = LicenseGrant::activate(
-            payload_for(&other),
-            &local,
-            LicenseGrantId::generate(),
-            timestamp(),
-        )
-        .unwrap_err();
+        let err = LicenseGrant::activate(payload_for(&other), &local, grant_id(), timestamp())
+            .unwrap_err();
         assert_eq!(
             err,
             LicenseValidationError::MachineHardwareMismatch {
