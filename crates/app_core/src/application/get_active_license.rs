@@ -1,10 +1,4 @@
 //! `GetActiveLicenseUseCase` (`tdd.phase-1` §7.3).
-//!
-//! `#![allow(dead_code)]`: the use case is unreachable from `app_core`'s
-//! public surface until the assembly/composition gate (HADR-0007 gates 4–5);
-//! until then it is exercised only by the Gate 2 tests below.
-
-#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -19,10 +13,22 @@ use crate::ports::{LicenseGrantRepository, RepositoryError};
 ///
 /// Core Engine itself needs no flag (ADR-0003 §4), so "no license yet" and "a
 /// license with no flags" both surface as an empty set.
+///
+/// Only the record's `feature_flags` are validated here; other corrupt record
+/// fields are tolerated deliberately — this use case's scope is the flag set,
+/// and the repository owns the record's persistence-level integrity.
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// Gate 2 tests until then.
+#[allow(dead_code)]
 pub(crate) struct GetActiveLicenseUseCase {
     license_grant_repository: Arc<dyn LicenseGrantRepository>,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: unreachable until the
+/// assembly/composition gate; exercised by the Gate 2 tests.
+#[allow(dead_code)]
 impl GetActiveLicenseUseCase {
     /// Constructs the use case around the `infra_persistence` implementation.
     pub(crate) fn new(license_grant_repository: Arc<dyn LicenseGrantRepository>) -> Self {
@@ -55,12 +61,20 @@ impl GetActiveLicenseUseCase {
 
 /// Decodes a stored SCREAMING_SNAKE_CASE flag string (ADR-0003) back into a
 /// [`FeatureFlag`]; a string outside the catalog is a corrupt record.
+///
+/// Same `#[allow(dead_code)]` as the use case: exercised only via the Gate 2
+/// tests until the composition gate.
+#[allow(dead_code)]
 fn parse_feature_flag(flag: &str) -> Result<FeatureFlag, GetActiveLicenseError> {
     FeatureFlag::deserialize(StrDeserializer::<'_, serde::de::value::Error>::new(flag))
         .map_err(|_| GetActiveLicenseError::CorruptRecord)
 }
 
 /// Errors returned by [`GetActiveLicenseUseCase`].
+///
+/// `#[allow(dead_code)]`: same as the use case — this is the caller-facing
+/// error surface of a use case that is unreachable until the composition gate.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub(crate) enum GetActiveLicenseError {
     /// The license grant store could not be read.
@@ -126,6 +140,18 @@ mod tests {
         assert_eq!(
             block_on(use_case.current_feature_flags()),
             Err(GetActiveLicenseError::Unavailable)
+        );
+    }
+
+    #[test]
+    fn record_with_empty_flags_returns_empty_set() {
+        let repository = Arc::new(FakeLicenseGrantRepository::with_find_result(Ok(Some(
+            record_with_flags(vec![]),
+        ))));
+        let use_case = GetActiveLicenseUseCase::new(repository);
+        assert_eq!(
+            block_on(use_case.current_feature_flags()).unwrap(),
+            Vec::<FeatureFlag>::new()
         );
     }
 

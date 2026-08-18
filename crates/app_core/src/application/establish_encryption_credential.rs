@@ -1,10 +1,4 @@
 //! `EstablishEncryptionCredentialUseCase` (`tdd.phase-1` §7.4, §4.6).
-//!
-//! `#![allow(dead_code)]`: the use case is unreachable from `app_core`'s
-//! public surface until the assembly/composition gate (HADR-0007 gates 4–5);
-//! until then it is exercised only by the Gate 2 tests below.
-
-#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -23,11 +17,19 @@ use crate::ports::{
 /// the Recovery Code; `take_snapshot()` captures `bootstrap.json` and the
 /// current database file into one encrypted archive. Only on success of both
 /// does the Recovery Code reach the Secretary for one-time display.
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// Gate 2 tests until then.
+#[allow(dead_code)]
 pub(crate) struct EstablishEncryptionCredentialUseCase {
     encryption_credential_gateway: Arc<dyn EncryptionCredentialGateway>,
     backup_snapshot_writer: Arc<dyn BackupSnapshotWriter>,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: unreachable until the
+/// assembly/composition gate; exercised by the Gate 2 tests.
+#[allow(dead_code)]
 impl EstablishEncryptionCredentialUseCase {
     /// Constructs the use case around the `infra_credentials` and
     /// `infra_backup` implementations.
@@ -64,6 +66,10 @@ impl EstablishEncryptionCredentialUseCase {
 }
 
 /// Errors returned by [`EstablishEncryptionCredentialUseCase`].
+///
+/// `#[allow(dead_code)]`: same as the use case — this is the caller-facing
+/// error surface of a use case that is unreachable until the composition gate.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub(crate) enum EstablishEncryptionCredentialError {
     /// Credential establishment (`establish()`) failed; the safe variants of
@@ -128,6 +134,32 @@ mod tests {
         assert_eq!(err, EstablishEncryptionCredentialError::InitialBackupFailed);
         assert_eq!(gateway.establish_count(), 1);
         assert_eq!(writer.call_count(), 1);
+    }
+
+    #[test]
+    fn retry_after_failed_initial_snapshot_succeeds() {
+        // §4.6: recovery from a failed step 2 is "run first-run setup again" —
+        // nothing has been shown to the Secretary or written elsewhere, so a
+        // full retry succeeds and returns the gateway's fresh Recovery Code
+        // with no partial state carried over.
+        let code = recovery_code();
+        let gateway = Arc::new(FakeEncryptionCredentialGateway::with_establish_result(Ok(
+            code.clone(),
+        )));
+        let writer = Arc::new(FakeBackupSnapshotWriter::failing_first());
+        let use_case = EstablishEncryptionCredentialUseCase::new(gateway.clone(), writer.clone());
+
+        let err = block_on(use_case.establish()).unwrap_err();
+        assert_eq!(err, EstablishEncryptionCredentialError::InitialBackupFailed);
+
+        let recovered = block_on(use_case.establish()).unwrap();
+        assert_eq!(recovered, code);
+        assert_eq!(gateway.establish_count(), 2);
+        assert_eq!(writer.call_count(), 2);
+        assert_eq!(
+            writer.destinations(),
+            vec![BackupDestination::Default, BackupDestination::Default]
+        );
     }
 
     #[test]

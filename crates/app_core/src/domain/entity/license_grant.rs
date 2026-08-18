@@ -1,11 +1,4 @@
 //! The `LicenseGrant` entity (PRD §11, `tdd.phase-1` §6.2).
-//!
-//! `#![allow(dead_code)]`: constructed by `ActivateLicenseUseCase`, which is
-//! itself unreachable from `app_core`'s public surface until the
-//! assembly/composition gate (HADR-0007 gates 4–5); until then the entity is
-//! exercised only by the Gate 1 domain tests and the Gate 2 use-case tests.
-
-#![allow(dead_code)]
 
 use crate::domain::errors::LicenseValidationError;
 use crate::domain::value_objects::{
@@ -26,6 +19,12 @@ use crate::domain::value_objects::{
 ///
 /// Constructed by `ActivateLicenseUseCase` after signature verification
 /// (`tdd.phase-1` §7.2); domain-tested here per HADR-0006 Gate 1.
+///
+/// `#[allow(dead_code)]`: constructed by `ActivateLicenseUseCase`, which is
+/// itself unreachable from `app_core`'s public surface until the
+/// assembly/composition gate (HADR-0007 gates 4–5); until then the entity is
+/// exercised only by the Gate 1 domain tests and the Gate 2 use-case tests.
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LicenseGrant {
     id: LicenseGrantId,
@@ -35,6 +34,9 @@ pub struct LicenseGrant {
     activated_at: Timestamp,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: exercised only via the Gate 1 and
+/// Gate 2 tests until the composition gate.
+#[allow(dead_code)]
 impl LicenseGrant {
     /// Activates a license: constructs the grant iff the payload is bound to the
     /// local machine.

@@ -6,7 +6,7 @@
 
 use std::future::Future;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use async_trait::async_trait;
@@ -137,8 +137,6 @@ pub(crate) struct FakeLicenseGrantRepository {
     save_result: Result<(), RepositoryError>,
     find_result: Result<Option<LicenseGrantRecord>, RepositoryError>,
     saved: Mutex<Vec<LicenseGrantRecord>>,
-    save_count: AtomicUsize,
-    find_count: AtomicUsize,
 }
 
 impl FakeLicenseGrantRepository {
@@ -168,8 +166,6 @@ impl FakeLicenseGrantRepository {
             save_result,
             find_result,
             saved: Mutex::new(Vec::new()),
-            save_count: AtomicUsize::new(0),
-            find_count: AtomicUsize::new(0),
         }
     }
 
@@ -188,7 +184,6 @@ impl Default for FakeLicenseGrantRepository {
 #[async_trait]
 impl LicenseGrantRepository for FakeLicenseGrantRepository {
     async fn save(&self, record: LicenseGrantRecord) -> Result<(), RepositoryError> {
-        self.save_count.fetch_add(1, Ordering::SeqCst);
         if self.save_result.is_ok() {
             self.saved.lock().unwrap().push(record);
         }
@@ -196,7 +191,6 @@ impl LicenseGrantRepository for FakeLicenseGrantRepository {
     }
 
     async fn find_current(&self) -> Result<Option<LicenseGrantRecord>, RepositoryError> {
-        self.find_count.fetch_add(1, Ordering::SeqCst);
         self.find_result.clone()
     }
 }
@@ -208,7 +202,6 @@ pub(crate) struct FakeEncryptionCredentialGateway {
     recover_result: Result<DatabaseEncryptionKey, CredentialError>,
     received_recovery_code: Mutex<Option<String>>,
     establish_count: AtomicUsize,
-    recover_count: AtomicUsize,
 }
 
 impl FakeEncryptionCredentialGateway {
@@ -236,7 +229,6 @@ impl FakeEncryptionCredentialGateway {
             recover_result,
             received_recovery_code: Mutex::new(None),
             establish_count: AtomicUsize::new(0),
-            recover_count: AtomicUsize::new(0),
         }
     }
 
@@ -269,7 +261,6 @@ impl EncryptionCredentialGateway for FakeEncryptionCredentialGateway {
         &self,
         recovery_code: &RecoveryCode,
     ) -> Result<DatabaseEncryptionKey, CredentialError> {
-        self.recover_count.fetch_add(1, Ordering::SeqCst);
         *self.received_recovery_code.lock().unwrap() = Some(recovery_code.as_str().to_string());
         self.recover_result
     }
@@ -285,6 +276,7 @@ impl EncryptionCredentialGateway for FakeEncryptionCredentialGateway {
 /// recording destinations.
 pub(crate) struct FakeBackupSnapshotWriter {
     result: Result<BackupSnapshotLocation, BackupError>,
+    fail_first: AtomicBool,
     destinations: Mutex<Vec<BackupDestination>>,
     call_count: AtomicUsize,
 }
@@ -303,10 +295,19 @@ impl FakeBackupSnapshotWriter {
         Self::returning(Err(BackupError::WriteFailed))
     }
 
+    /// A writer that fails the first snapshot and succeeds afterwards, for the
+    /// §4.6 retry test.
+    pub(crate) fn failing_first() -> Self {
+        let writer = Self::succeeding();
+        writer.fail_first.store(true, Ordering::SeqCst);
+        writer
+    }
+
     /// A writer returning `result` from every `take_snapshot()` call.
     pub(crate) fn returning(result: Result<BackupSnapshotLocation, BackupError>) -> Self {
         Self {
             result,
+            fail_first: AtomicBool::new(false),
             destinations: Mutex::new(Vec::new()),
             call_count: AtomicUsize::new(0),
         }
@@ -331,6 +332,9 @@ impl BackupSnapshotWriter for FakeBackupSnapshotWriter {
     ) -> Result<BackupSnapshotLocation, BackupError> {
         self.call_count.fetch_add(1, Ordering::SeqCst);
         self.destinations.lock().unwrap().push(destination);
+        if self.fail_first.swap(false, Ordering::SeqCst) {
+            return Err(BackupError::WriteFailed);
+        }
         self.result.clone()
     }
 }

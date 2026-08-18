@@ -1,10 +1,4 @@
 //! `RecoverDatabaseEncryptionKeyUseCase` (`tdd.phase-1` §7.5).
-//!
-//! `#![allow(dead_code)]`: the use case is unreachable from `app_core`'s
-//! public surface until the assembly/composition gate (HADR-0007 gates 4–5);
-//! until then it is exercised only by the Gate 2 tests below.
-
-#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -20,10 +14,18 @@ use crate::ports::{CredentialError, EncryptionCredentialGateway};
 /// wrong-but-well-formed code fails at the AES-GCM unwrap inside
 /// `infra_credentials` and surfaces as
 /// [`RecoverDatabaseEncryptionKeyError::RecoveryCodeMismatch`].
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// Gate 2 tests until then.
+#[allow(dead_code)]
 pub(crate) struct RecoverDatabaseEncryptionKeyUseCase {
     encryption_credential_gateway: Arc<dyn EncryptionCredentialGateway>,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: unreachable until the
+/// assembly/composition gate; exercised by the Gate 2 tests.
+#[allow(dead_code)]
 impl RecoverDatabaseEncryptionKeyUseCase {
     /// Constructs the use case around the `infra_credentials` implementation.
     pub(crate) fn new(encryption_credential_gateway: Arc<dyn EncryptionCredentialGateway>) -> Self {
@@ -52,6 +54,10 @@ impl RecoverDatabaseEncryptionKeyUseCase {
 }
 
 /// Errors returned by [`RecoverDatabaseEncryptionKeyUseCase`].
+///
+/// `#[allow(dead_code)]`: same as the use case — this is the caller-facing
+/// error surface of a use case that is unreachable until the composition gate.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub(crate) enum RecoverDatabaseEncryptionKeyError {
     /// The OS credential store is unavailable (e.g. OS reinstall without a

@@ -13,12 +13,6 @@
 //! §8.3).
 //!
 //! [`Clock`]: crate::ports::Clock
-//!
-//! `#![allow(dead_code)]`: the helper is unreachable from `app_core`'s public
-//! surface until the assembly/composition gate (HADR-0007 gates 4–5); until
-//! then it is exercised only by the tests below.
-
-#![allow(dead_code)]
 
 use uuid::Uuid;
 
@@ -29,6 +23,11 @@ use crate::domain::value_objects::LicenseGrantId;
 /// The application layer is explicitly allowed to touch `Uuid::now_v7()`
 /// (reads `SystemTime` + OS entropy); the domain is not
 /// (`backend_arch_docs/dependency-rules.md`: "Domain modules perform no I/O").
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// tests below until then.
+#[allow(dead_code)]
 pub(crate) fn new_license_grant_id() -> LicenseGrantId {
     LicenseGrantId::from_uuid(Uuid::now_v7())
 }

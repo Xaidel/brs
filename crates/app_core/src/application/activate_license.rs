@@ -1,10 +1,4 @@
 //! `ActivateLicenseUseCase` (`tdd.phase-1` §7.2).
-//!
-//! `#![allow(dead_code)]`: the use case is unreachable from `app_core`'s
-//! public surface until the assembly/composition gate (HADR-0007 gates 4–5);
-//! until then it is exercised only by the Gate 2 tests below.
-
-#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -28,6 +22,11 @@ use crate::ports::{
 /// Signature verification happens here — an application-layer port call, not
 /// domain (§4.4) — before the grant is ever constructed, so a forged or
 /// tampered key can never leave a `LicenseGrant` behind.
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// Gate 2 tests until then.
+#[allow(dead_code)]
 pub(crate) struct ActivateLicenseUseCase {
     machine_hardware_id_source: Arc<dyn MachineHardwareIdSource>,
     signature_verifier: Arc<dyn LicenseSignatureVerifier>,
@@ -35,6 +34,9 @@ pub(crate) struct ActivateLicenseUseCase {
     clock: Arc<dyn Clock>,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: unreachable until the
+/// assembly/composition gate; exercised by the Gate 2 tests.
+#[allow(dead_code)]
 impl ActivateLicenseUseCase {
     /// Constructs the use case around its four outbound ports.
     pub(crate) fn new(
@@ -90,6 +92,10 @@ impl ActivateLicenseUseCase {
 }
 
 /// Maps a granted license onto the port-owned persisted record (§8.3).
+///
+/// Same `#[allow(dead_code)]` as the use case: exercised only via the Gate 2
+/// tests until the composition gate.
+#[allow(dead_code)]
 fn record_for(grant: &LicenseGrant) -> LicenseGrantRecord {
     LicenseGrantRecord {
         id: grant.id().as_uuid().to_string(),
@@ -109,6 +115,10 @@ fn record_for(grant: &LicenseGrant) -> LicenseGrantRecord {
 /// the insertion point where a future consumer would be invoked
 /// (`architecture.md`: "domain events… may later be drained and logged/audited
 /// by application code").
+///
+/// Same `#[allow(dead_code)]` as the use case: exercised only via the Gate 2
+/// tests until the composition gate.
+#[allow(dead_code)]
 fn drain(event: LicenseGrantActivated) {
     drop(event);
 }
@@ -118,6 +128,15 @@ fn drain(event: LicenseGrantActivated) {
 /// Wraps `LicenseValidationError` (as its two variants) plus `InvalidSignature`
 /// plus the outbound-port failures, each mapped to a safe, non-leaking variant
 /// per HADR-0005's boundary policy.
+///
+/// Each port failure folds into its own safe variant because this use case's
+/// caller-facing surface is uniform across five distinct failure sources — the
+/// deliberate contrast to `GetMachineHardwareIdUseCase`, which passes its
+/// single port's error through as-is.
+///
+/// `#[allow(dead_code)]`: same as the use case — this is the caller-facing
+/// error surface of a use case that is unreachable until the composition gate.
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub(crate) enum ActivateLicenseError {
     /// The License Key string is not a decodable, well-formed envelope.
@@ -253,6 +272,21 @@ mod tests {
             repository.saved_records().is_empty(),
             "verification failure must never construct or persist a LicenseGrant (§14)"
         );
+    }
+
+    #[test]
+    fn empty_flags_key_validates_and_persists_grant_with_no_flags() {
+        let local = machine_id();
+        let (use_case, _source, _verifier, repository) = harness(
+            FakeMachineHardwareIdSource::returning(Ok(local.clone())),
+            FakeLicenseSignatureVerifier::succeeding(),
+            FakeLicenseGrantRepository::new(),
+        );
+        let flags = block_on(use_case.activate(&raw_license_key(local.as_str(), &[]))).unwrap();
+        assert!(flags.is_empty());
+        let saved = repository.saved_records();
+        assert_eq!(saved.len(), 1);
+        assert!(saved[0].feature_flags.is_empty());
     }
 
     #[test]

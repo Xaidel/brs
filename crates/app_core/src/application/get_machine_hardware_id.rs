@@ -1,10 +1,4 @@
 //! `GetMachineHardwareIdUseCase` (`tdd.phase-1` §7.1).
-//!
-//! `#![allow(dead_code)]`: the use case is unreachable from `app_core`'s
-//! public surface until the assembly/composition gate (HADR-0007 gates 4–5);
-//! until then it is exercised only by the Gate 2 tests below.
-
-#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -21,11 +15,22 @@ use crate::ports::{HardwareIdError, MachineHardwareIdSource};
 ///
 /// The port's own error is returned as-is: `HardwareIdError` is already a
 /// safe, non-leaking classification (HADR-0005), and this use case adds no
-/// failure mode of its own, so a duplicate wrapper would be ceremony.
+/// failure mode of its own, so a duplicate wrapper would be ceremony. This is
+/// the deliberate contrast to `ActivateLicenseError`, which must wrap the same
+/// port error because its caller-facing surface is uniform across five
+/// distinct failure sources.
+///
+/// `#[allow(dead_code)]`: unreachable from `app_core`'s public surface until
+/// the assembly/composition gate (HADR-0007 gates 4–5); exercised only by the
+/// Gate 2 tests until then.
+#[allow(dead_code)]
 pub(crate) struct GetMachineHardwareIdUseCase {
     machine_hardware_id_source: Arc<dyn MachineHardwareIdSource>,
 }
 
+/// Same `#[allow(dead_code)]` as the struct: unreachable until the
+/// assembly/composition gate; exercised by the Gate 2 tests.
+#[allow(dead_code)]
 impl GetMachineHardwareIdUseCase {
     /// Constructs the use case around the `infra_hardware_id` implementation.
     pub(crate) fn new(machine_hardware_id_source: Arc<dyn MachineHardwareIdSource>) -> Self {
